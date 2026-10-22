@@ -42,7 +42,7 @@ Requiere Node 18+.
 | **Legionario** | cuadrado | Aguanta la línea | Caballería | Arqueros | 1 |
 | **Arquero** | triángulo | Daño a distancia, frágil | Legionarios | Caballería | 1 |
 | **Caballería** | rombo | Rápida, flanquea | Arqueros | Legionarios | 1 |
-| **Elefante de guerra** | círculo con colmillos | Tanque lento y carísimo | Caballería | Muchos arqueros (×1,3 de daño recibido) | 3 |
+| **Elefante de guerra** | círculo con colmillos | Tanque lento y carísimo | Caballería | Muchos arqueros (×2,4 de daño recibido) | 3 |
 
 El **elefante** entra en **pánico** por debajo del 25 % de vida: ataca a la
 unidad más cercana, sea aliada o enemiga. Se avisa con un aro rojo y un «!».
