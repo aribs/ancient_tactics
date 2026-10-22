@@ -16,24 +16,6 @@
       "caballeria": 2.0
     }
   },
-  "lancero": {
-    "id": "lancero",
-    "nombre": "Lancero",
-    "rol": "Lanza larga; frena a la caballería, frágil ante arqueros",
-    "hp": 105,
-    "damage": 10,
-    "attackRange": 30,
-    "attackCooldown": 0.9,
-    "speed": 44,
-    "aggroRange": 150,
-    "radius": 10,
-    "cost": 12,
-    "color": "#d4cf5a",
-    "bonusVs": {
-      "caballeria": 2.6
-    },
-    "desbloqueoOleada": 2
-  },
   "arquero": {
     "id": "arquero",
     "nombre": "Arquero",
@@ -49,8 +31,7 @@
     "color": "#46c08a",
     "bonusVs": {
       "legionario": 1.6,
-      "elefante": 1.3,
-      "lancero": 1.3
+      "elefante": 1.3
     }
   },
   "caballeria": {

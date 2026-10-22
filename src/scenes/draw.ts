@@ -89,16 +89,6 @@ export function drawUnitShape(
       g.strokeRect(x - s, y - s, s * 2, s * 2);
       break;
     }
-    case 'lancero': {
-      // Cuadrado con una lanza hacia el frente.
-      const s = radius - 1;
-      g.fillRect(x - s, y - s, s * 2, s * 2);
-      g.strokeRect(x - s, y - s, s * 2, s * 2);
-      const f = team === 'jugador' ? 1 : -1;
-      g.lineStyle(2, 0xf2ead8, alpha);
-      g.lineBetween(x, y, x + f * (radius + 12), y);
-      break;
-    }
     case 'arquero': {
       const r = radius + 2;
       const pts = [x, y - r, x + r, y + r, x - r, y + r];

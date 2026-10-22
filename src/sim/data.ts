@@ -8,7 +8,7 @@ import type { Battlefield, UnitTable, UnitType } from './types';
 
 export const UNITS = unitsJson as unknown as UnitTable;
 
-export const UNIT_TYPES: UnitType[] = ['legionario', 'lancero', 'arquero', 'caballeria', 'elefante'];
+export const UNIT_TYPES: UnitType[] = ['legionario', 'arquero', 'caballeria', 'elefante'];
 
 /** Tipos que el jugador puede desplegar en la oleada `waveId`. */
 export function unlockedTypes(waveId: number): UnitType[] {

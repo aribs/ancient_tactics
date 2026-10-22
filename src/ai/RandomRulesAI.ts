@@ -15,7 +15,6 @@ import { placeRival } from './placement';
 /** Peso base de cada tipo; se multiplica por un factor aleatorio por oleada. */
 const PESO_BASE: Record<UnitType, number> = {
   legionario: 1,
-  lancero: 0.7,
   arquero: 1,
   caballeria: 0.6,
   elefante: 0.25,
@@ -30,7 +29,7 @@ const TOPE_PRESUPUESTO: Partial<Record<UnitType, number>> = {
 
 /** Fracción mínima del presupuesto destinada a primera línea. */
 const MIN_PRIMERA_LINEA = 0.25;
-const PRIMERA_LINEA: UnitType[] = ['legionario', 'lancero', 'elefante'];
+const PRIMERA_LINEA: UnitType[] = ['legionario', 'elefante'];
 
 export class RandomRulesAI implements DeploymentAI {
   readonly nombre = 'Nivel 2 · Aleatorio con reglas';

@@ -6,7 +6,7 @@ un presupuesto de puntos en desplegar tropas sobre una **cuadrícula**; el rival
 hace lo mismo y el combate se resuelve solo. Arte de prototipo: formas y
 colores simples.
 
-Seis oleadas, cinco tipos de unidad, terreno generado por semilla, IA rival de
+Seis oleadas, cuatro tipos de unidad, terreno generado por semilla, IA rival de
 **nivel 2** (aleatorio con reglas) y resumen de la batalla al terminar.
 
 ## Arrancar
@@ -40,9 +40,8 @@ Requiere Node 18+.
 | Unidad | Forma | Papel | Fuerte contra | Débil contra | Desde oleada |
 | --- | --- | --- | --- | --- | --- |
 | **Legionario** | cuadrado | Aguanta la línea | Caballería | Arqueros | 1 |
-| **Lancero** | cuadrado con lanza | Alcance largo, frena a la caballería | Caballería (×2,6) | Arqueros | 2 |
-| **Arquero** | triángulo | Daño a distancia, frágil | Legionarios, lanceros | Caballería | 1 |
-| **Caballería** | rombo | Rápida, flanquea | Arqueros | Legionarios, lanceros | 1 |
+| **Arquero** | triángulo | Daño a distancia, frágil | Legionarios | Caballería | 1 |
+| **Caballería** | rombo | Rápida, flanquea | Arqueros | Legionarios | 1 |
 | **Elefante de guerra** | círculo con colmillos | Tanque lento y carísimo | Caballería | Muchos arqueros (×1,3 de daño recibido) | 3 |
 
 El **elefante** entra en **pánico** por debajo del 25 % de vida: ataca a la
@@ -91,6 +90,6 @@ cómo rinde un ejército de referencia frente a las IA de nivel 1 y 2.
 
 ## Hoja de ruta
 
-- Hecho: prototipo gris, cinco unidades, IA nivel 1 y 2, terreno, pánico del elefante.
+- Hecho: prototipo gris, cuatro unidades, IA nivel 1 y 2, terreno, pánico del elefante.
 - Pendiente: IA nivel 3 (contra-picking), mejoras entre oleadas, hoplitas y
   catapultas, arte y sonido reales, publicación en la web.

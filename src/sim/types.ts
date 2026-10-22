@@ -1,7 +1,7 @@
 // Tipos de la capa de simulación. NO importa Phaser: debe poder ejecutarse
 // en Node sin gráficos para equilibrar miles de batallas.
 
-export type UnitType = 'legionario' | 'lancero' | 'arquero' | 'caballeria' | 'elefante';
+export type UnitType = 'legionario' | 'arquero' | 'caballeria' | 'elefante';
 export type Team = 'jugador' | 'rival';
 
 /** Estadísticas de una unidad, cargadas desde units.json. */

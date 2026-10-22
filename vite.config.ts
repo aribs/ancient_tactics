@@ -7,6 +7,9 @@ export default defineConfig({
   server: {
     open: true,
   },
+  preview: {
+    open: false,
+  },
   build: {
     target: 'es2020',
     outDir: 'dist',

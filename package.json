@@ -9,7 +9,8 @@
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
-    "sim": "tsx src/sim/headless.ts"
+    "sim": "tsx src/sim/headless.ts",
+    "serve": "vite preview --host 0.0.0.0 --port 4173 --strictPort"
   },
   "dependencies": {
     "phaser": "^3.80.1"
