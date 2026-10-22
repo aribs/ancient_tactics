@@ -22,6 +22,7 @@ const game = new Phaser.Game({
     height: inicial.height,
   },
   backgroundColor: '#20262e',
+  // Cada escena ajusta tamaño y zoom a la ventana (ver scenes/layout.ts).
   scene: [BootScene, DeployScene, BattleScene],
   render: {
     pixelArt: false,

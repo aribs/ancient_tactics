@@ -13,6 +13,7 @@ import { Rng } from '../sim/rng';
 import { generateTerrain, type TerrainFeature } from '../sim/terrain';
 import type { Battlefield, PlacedUnit, UnitType } from '../sim/types';
 import { drawTerrain, drawUnitShape, TEAM_TINT } from './draw';
+import { fitToScreen, onScreenResize, requestFullscreenOnTouch, sharpenTexts, type View } from './layout';
 
 interface PaletteButton {
   type: UnitType;
@@ -42,6 +43,9 @@ export class DeployScene extends Phaser.Scene {
   private stanceBtns: { stance: Stance; x: number; y: number; w: number; h: number }[] = [];
   private stanceLabels: Phaser.GameObjects.Text[] = [];
   private startBtn = { x: 0, y: 0, w: 150, h: 48 };
+  private view!: View;
+  /** Textos del HUD: se destruyen y recrean al cambiar el tamaño de pantalla. */
+  private uiTexts: Phaser.GameObjects.Text[] = [];
 
   private hudText!: Phaser.GameObjects.Text;
   private budgetText!: Phaser.GameObjects.Text;
@@ -55,10 +59,6 @@ export class DeployScene extends Phaser.Scene {
   create(): void {
     this.estado = this.registry.get('estado') as GameState;
     this.field = this.estado.field;
-    // El lienzo se ajusta al tablero de esta oleada (crece con el nivel).
-    this.scale.resize(this.field.width, this.field.height);
-    this.startBtn.x = this.field.width - 166;
-    this.startBtn.y = this.field.height - 64;
     // Phaser reutiliza la instancia de la escena al reiniciarla: todo el estado
     // que apunte a objetos de la ejecución anterior (ya destruidos) se vacía aquí.
     this.placed.clear();
@@ -84,106 +84,125 @@ export class DeployScene extends Phaser.Scene {
     this.gUnits = this.add.graphics();
     this.gUi = this.add.graphics();
 
-    this.buildPalette();
-    this.buildStance();
-    this.buildTexts();
-    this.drawBoard();
-    this.redraw();
+    this.layout();
+    onScreenResize(this, () => this.layout());
+    requestFullscreenOnTouch(this);
 
     this.input.on('pointerdown', this.onPointerDown, this);
   }
 
-  // --- Construcción de UI --------------------------------------------------
+  /** Ajusta el lienzo a la pantalla y recoloca el HUD en los bordes visibles. */
+  private layout(): void {
+    this.view = fitToScreen(this, this.field);
+    for (const t of this.uiTexts) t.destroy();
+    this.uiTexts = [];
+    this.paletteLabels = [];
+    this.stanceLabels = [];
 
-  private buildPalette(): void {
-    const w = 118;
-    const h = 60;
-    const y = this.field.height - 70;
-    this.palette = unlockedTypes(this.estado.wave.id).map((type, i) => ({
-      type,
-      x: 20 + i * (w + 6),
-      y,
-      w,
-      h,
-    }));
+    this.buildBottomBar();
+    this.buildStanceTexts();
+    this.buildTexts();
+    this.drawBoard();
+    this.redraw();
+    sharpenTexts(this, this.view);
   }
 
-  private buildStance(): void {
-    const defs: { stance: Stance; text: string }[] = [
-      { stance: 'ataque', text: 'ATAQUE' },
-      { stance: 'defensa', text: 'DEFENSA' },
-    ];
-    this.stanceBtns = defs.map((d, i) => ({ stance: d.stance, x: 660 + i * 86, y: this.field.height - 70, w: 80, h: 60 }));
-    this.stanceBtns.forEach((b, i) => {
+  private text(x: number, y: number, str: string, style: Phaser.Types.GameObjects.Text.TextStyle): Phaser.GameObjects.Text {
+    const t = this.add.text(x, y, str, { fontFamily: 'system-ui, sans-serif', ...style });
+    this.uiTexts.push(t);
+    return t;
+  }
+
+  private px(size: number): string {
+    return `${Math.round(size * this.view.ui)}px`;
+  }
+
+  /** Escala de un botón de paleta: se reduce si no cabe a tamaño completo (pantallas estrechas). */
+  private paletteScale(btn: PaletteButton): number {
+    return Math.min(this.view.ui, btn.w / 118);
+  }
+
+  // --- Construcción de UI --------------------------------------------------
+
+  /** Barra inferior: paleta a la izquierda, postura y «Comenzar» a la derecha. */
+  private buildBottomBar(): void {
+    const u = this.view.ui;
+    const fh = this.field.height;
+    const h = Math.min(Math.round(60 * u), 76);
+    const y = fh - h - 10;
+
+    const sw = Math.round(150 * u);
+    const sh = Math.min(Math.round(48 * u), 66);
+    this.startBtn = { x: this.view.x1 - 16 - sw, y: fh - sh - 16, w: sw, h: sh };
+
+    const stW = Math.round(92 * u);
+    const gap = Math.round(6 * u);
+    const stX = this.startBtn.x - 24 - (stW * 2 + gap);
+    const stances: Stance[] = ['ataque', 'defensa'];
+    this.stanceBtns = stances.map((stance, i) => ({ stance, x: stX + i * (stW + gap), y, w: stW, h }));
+
+    const tipos = unlockedTypes(this.estado.wave.id);
+    const x0 = this.view.x0 + 20;
+    const disponible = stX - 24 - x0;
+    const w = Math.min(Math.round(118 * u), Math.floor(disponible / tipos.length) - gap);
+    this.palette = tipos.map((type, i) => ({ type, x: x0 + i * (w + gap), y, w, h }));
+  }
+
+  private buildStanceTexts(): void {
+    const labels: Record<Stance, string> = { ataque: 'ATAQUE', defensa: 'DEFENSA' };
+    for (const b of this.stanceBtns) {
       this.stanceLabels.push(
-        this.add
-          .text(b.x + b.w / 2, b.y + b.h / 2, defs[i].text, {
-            fontFamily: 'system-ui, sans-serif',
-            fontSize: '15px',
-            color: '#f2f6fa',
-            fontStyle: 'bold',
-          })
-          .setOrigin(0.5),
+        this.text(b.x + b.w / 2, b.y + b.h / 2, labels[b.stance], {
+          fontSize: this.px(15),
+          color: '#f2f6fa',
+          fontStyle: 'bold',
+        }).setOrigin(0.5),
       );
-    });
-    this.add
-      .text(660 + 83, this.field.height - 84, 'Postura', {
-        fontFamily: 'system-ui, sans-serif',
-        fontSize: '12px',
-        color: '#9fb0c0',
-      })
-      .setOrigin(0.5, 0.5);
+    }
+    const first = this.stanceBtns[0];
+    const last = this.stanceBtns[this.stanceBtns.length - 1];
+    this.text((first.x + last.x + last.w) / 2, first.y - 12, 'Postura', {
+      fontSize: this.px(12),
+      color: '#9fb0c0',
+    }).setOrigin(0.5, 0.5);
   }
 
   private buildTexts(): void {
-    this.hudText = this.add
-      .text(this.field.width / 2, 24, '', {
-        fontFamily: 'system-ui, sans-serif',
-        fontSize: '22px',
-        color: '#eef3f8',
-        fontStyle: 'bold',
-      })
-      .setOrigin(0.5, 0);
+    const v = this.view;
+    this.hudText = this.text(this.field.width / 2, 24, '', {
+      fontSize: this.px(22),
+      color: '#eef3f8',
+      fontStyle: 'bold',
+    }).setOrigin(0.5, 0);
 
-    this.budgetText = this.add
-      .text(this.field.width - 20, 24, '', {
-        fontFamily: 'system-ui, sans-serif',
-        fontSize: '18px',
-        color: '#ffe08a',
-      })
-      .setOrigin(1, 0);
+    this.budgetText = this.text(v.x1 - 20, 24, '', {
+      fontSize: this.px(18),
+      color: '#ffe08a',
+    }).setOrigin(1, 0);
 
-    this.add
-      .text(this.field.width / 2, 62, 'Clic en una celda para colocar · clic en una unidad para retirarla', {
-        fontFamily: 'system-ui, sans-serif',
-        fontSize: '14px',
-        color: '#9fb0c0',
-      })
-      .setOrigin(0.5, 0);
+    const ayuda = v.touch
+      ? 'Toca una celda para colocar · toca una unidad para retirarla'
+      : 'Clic en una celda para colocar · clic en una unidad para retirarla';
+    this.text(this.field.width / 2, 24 + Math.round(34 * v.ui), ayuda, {
+      fontSize: this.px(14),
+      color: '#9fb0c0',
+    }).setOrigin(0.5, 0);
 
     for (const btn of this.palette) {
-      const u = UNITS[btn.type];
-      const label = this.add
-        .text(btn.x + btn.w / 2, btn.y + btn.h / 2, '', {
-          fontFamily: 'system-ui, sans-serif',
-          fontSize: '13px',
-          color: '#f2f6fa',
-          align: 'center',
-        })
-        .setOrigin(0.5);
+      const label = this.text(btn.x + btn.w / 2, btn.y + btn.h / 2, '', {
+        fontSize: `${Math.round(13 * this.paletteScale(btn))}px`,
+        color: '#f2f6fa',
+        align: 'left',
+      }).setOrigin(0, 0.5);
       label.setData('type', btn.type);
-      void u;
       this.paletteLabels.push(label);
     }
 
-    this.startLabel = this.add
-      .text(this.startBtn.x + this.startBtn.w / 2, this.startBtn.y + this.startBtn.h / 2, 'COMENZAR', {
-        fontFamily: 'system-ui, sans-serif',
-        fontSize: '18px',
-        color: '#0d1b12',
-        fontStyle: 'bold',
-      })
-      .setOrigin(0.5);
+    this.startLabel = this.text(this.startBtn.x + this.startBtn.w / 2, this.startBtn.y + this.startBtn.h / 2, 'COMENZAR', {
+      fontSize: this.px(18),
+      color: '#0d1b12',
+      fontStyle: 'bold',
+    }).setOrigin(0.5);
   }
 
   // --- Dibujo --------------------------------------------------------------
@@ -195,9 +214,11 @@ export class DeployScene extends Phaser.Scene {
     // Mitades del campo.
     g.fillStyle(0x253040, 1);
     const play = this.field.playBottom - this.field.playTop;
-    g.fillRect(0, HUD_BAND, this.field.width / 2, play);
+    // Las mitades se prolongan hasta los bordes visibles de la pantalla.
+    const mid = this.field.width / 2;
+    g.fillRect(this.view.x0, HUD_BAND, mid - this.view.x0, play);
     g.fillStyle(0x3a2832, 1);
-    g.fillRect(this.field.width / 2, HUD_BAND, this.field.width / 2, play);
+    g.fillRect(mid, HUD_BAND, this.view.x1 - mid, play);
 
     // Línea central.
     g.lineStyle(2, 0x55606e, 0.8);
@@ -271,7 +292,8 @@ export class DeployScene extends Phaser.Scene {
       g.fillRoundedRect(btn.x, btn.y, btn.w, btn.h, 8);
       g.strokeRoundedRect(btn.x, btn.y, btn.w, btn.h, 8);
       // Icono del tipo.
-      drawUnitShape(g, btn.type, 'jugador', btn.x + 20, btn.y + btn.h / 2, 11, 1);
+      const k = this.paletteScale(btn);
+      drawUnitShape(g, btn.type, 'jugador', btn.x + 20 * k, btn.y + btn.h / 2, 11 * k, 1);
     }
 
     // Selector de postura.
@@ -312,8 +334,7 @@ export class DeployScene extends Phaser.Scene {
       label.setColor(type === this.selected ? '#ffffff' : '#c4d0dc');
       // Reposicionar el texto a la derecha del icono.
       const btn = this.palette.find((b) => b.type === type)!;
-      label.setPosition(btn.x + 40, btn.y + btn.h / 2 - 2);
-      label.setOrigin(0, 0.5);
+      label.setPosition(btn.x + 38 * this.paletteScale(btn), btn.y + btn.h / 2 - 2);
     }
   }
 
@@ -332,7 +353,9 @@ export class DeployScene extends Phaser.Scene {
   }
 
   private onPointerDown(pointer: Phaser.Input.Pointer): void {
-    const { x, y } = pointer;
+    // Coordenadas de mundo: la cámara está desplazada y con zoom.
+    const x = pointer.worldX;
+    const y = pointer.worldY;
 
     // ¿Botón comenzar?
     if (this.inRect(x, y, this.startBtn) && this.placed.size > 0) {

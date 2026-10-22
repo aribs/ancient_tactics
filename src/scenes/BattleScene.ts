@@ -6,6 +6,7 @@ import { Simulation, SIM_DT } from '../sim/Simulation';
 import type { TerrainFeature } from '../sim/terrain';
 import type { Battlefield, PlacedUnit, SimOutcome } from '../sim/types';
 import { drawTerrain, drawUnitShape, TEAM_TINT } from './draw';
+import { fitToScreen, onScreenResize, sharpenTexts, type View } from './layout';
 
 interface BattleData {
   playerUnits: PlacedUnit[];
@@ -52,6 +53,14 @@ export class BattleScene extends Phaser.Scene {
   private speed = 1;
   private paused = false;
   private clickables: Clickable[] = [];
+  private view!: View;
+  private seed = 0;
+  private outcome: SimOutcome | null = null;
+  /** Objetos del HUD: se destruyen y recrean al cambiar el tamaño de pantalla. */
+  private hud: Phaser.GameObjects.GameObject[] = [];
+  private speedLabel?: Phaser.GameObjects.Text;
+  private pauseLabel?: Phaser.GameObjects.Text;
+  private pauseBanner?: Phaser.GameObjects.Text;
 
   constructor() {
     super('Battle');
@@ -60,13 +69,15 @@ export class BattleScene extends Phaser.Scene {
   create(data: BattleData): void {
     this.estado = this.registry.get('estado') as GameState;
     this.field = this.estado.field;
-    this.scale.resize(this.field.width, this.field.height);
     this.acc = 0;
     this.fx = [];
     this.terminado = false;
     this.speed = 1;
     this.paused = false;
     this.clickables = [];
+    this.hud = [];
+    this.outcome = null;
+    this.seed = data.seed;
 
     const placed = [...data.playerUnits, ...data.rivalUnits];
     this.sim = new Simulation(this.field, placed, data.seed, data.terrain, this.estado.stance);
@@ -75,30 +86,56 @@ export class BattleScene extends Phaser.Scene {
     this.gUnits = this.add.graphics();
     this.gFx = this.add.graphics();
 
-    this.drawField(data.seed);
-
-    this.add
-      .text(this.field.width / 2, 24, 'Cambia de postura cuando quieras', {
-        fontFamily: 'system-ui, sans-serif',
-        fontSize: '18px',
-        color: '#dfe7ef',
-      })
-      .setOrigin(0.5, 0);
-
     // Entrada a nivel de escena con detección manual (igual que en despliegue,
     // que funciona de forma fiable). Evita el input por objeto, que no estaba
     // registrando clics aquí.
     this.input.on('pointerdown', this.onPointerDown, this);
     this.input.on('pointermove', this.onPointerMove, this);
+    this.addKeyboardShortcuts();
+
+    this.layout();
+    onScreenResize(this, () => this.layout());
+  }
+
+  /** Ajusta el lienzo a la pantalla y reconstruye el HUD en los bordes visibles. */
+  private layout(): void {
+    this.view = fitToScreen(this, this.field);
+    for (const o of this.hud) o.destroy();
+    this.hud = [];
+    this.clickables = [];
+
+    this.drawField(this.seed);
+    // Se oculta con la pantalla de resultado, que usa la misma franja superior.
+    this.text(this.field.width / 2, 24, 'Cambia de postura cuando quieras', {
+      fontSize: this.px(18),
+      color: '#dfe7ef',
+    })
+      .setOrigin(0.5, 0)
+      .setVisible(!this.outcome);
 
     this.addSpeedControl();
     this.addStanceControl();
+    if (this.outcome) this.showEndOverlay(this.outcome);
     this.renderState();
+    sharpenTexts(this, this.view);
+  }
+
+  private track<T extends Phaser.GameObjects.GameObject>(o: T): T {
+    this.hud.push(o);
+    return o;
+  }
+
+  private text(x: number, y: number, str: string, style: Phaser.Types.GameObjects.Text.TextStyle): Phaser.GameObjects.Text {
+    return this.track(this.add.text(x, y, str, { fontFamily: 'system-ui, sans-serif', ...style }));
+  }
+
+  private px(size: number): string {
+    return `${Math.round(size * this.view.ui)}px`;
   }
 
   private onPointerDown(pointer: Phaser.Input.Pointer): void {
     for (const c of this.clickables) {
-      if (this.inRect(pointer.x, pointer.y, c)) {
+      if (this.inRect(pointer.worldX, pointer.worldY, c)) {
         c.onClick();
         return;
       }
@@ -108,7 +145,7 @@ export class BattleScene extends Phaser.Scene {
   private onPointerMove(pointer: Phaser.Input.Pointer): void {
     for (const c of this.clickables) {
       if (!c.rect || c.base === undefined || c.hover === undefined) continue;
-      c.rect.setFillStyle(this.inRect(pointer.x, pointer.y, c) ? c.hover : c.base);
+      c.rect.setFillStyle(this.inRect(pointer.worldX, pointer.worldY, c) ? c.hover : c.base);
     }
   }
 
@@ -161,9 +198,11 @@ export class BattleScene extends Phaser.Scene {
     g.clear();
     g.fillStyle(0x253040, 1);
     const play = this.field.playBottom - this.field.playTop;
-    g.fillRect(0, HUD_BAND, this.field.width / 2, play);
+    // Las mitades se prolongan hasta los bordes visibles de la pantalla.
+    const mid = this.field.width / 2;
+    g.fillRect(this.view.x0, HUD_BAND, mid - this.view.x0, play);
     g.fillStyle(0x3a2832, 1);
-    g.fillRect(this.field.width / 2, HUD_BAND, this.field.width / 2, play);
+    g.fillRect(mid, HUD_BAND, this.view.x1 - mid, play);
     g.lineStyle(2, 0x55606e, 0.6);
     g.beginPath();
     g.moveTo(this.field.width / 2, this.field.playTop);
@@ -248,51 +287,61 @@ export class BattleScene extends Phaser.Scene {
 
   // --- Controles y final ---------------------------------------------------
 
+  private setSpeed(v: number): void {
+    this.speed = v;
+    this.speedLabel?.setText(`▶ x${v}`);
+  }
+
+  private togglePause(): void {
+    if (this.terminado) return;
+    this.paused = !this.paused;
+    this.pauseLabel?.setText(this.paused ? '▶' : '⏸');
+    this.pauseBanner?.setVisible(this.paused);
+  }
+
+  private addKeyboardShortcuts(): void {
+    // Atajos: espacio pausa; 1, 2 y 4 fijan la velocidad.
+    const kb = this.input.keyboard;
+    const pause = (): void => this.togglePause();
+    kb?.on('keydown-SPACE', pause);
+    kb?.on('keydown-ONE', () => this.setSpeed(1));
+    kb?.on('keydown-TWO', () => this.setSpeed(2));
+    kb?.on('keydown-FOUR', () => this.setSpeed(4));
+    this.events.once('shutdown', () => {
+      kb?.off('keydown-SPACE', pause);
+      kb?.removeAllListeners('keydown-ONE');
+      kb?.removeAllListeners('keydown-TWO');
+      kb?.removeAllListeners('keydown-FOUR');
+    });
+  }
+
   private addSpeedControl(): void {
     const speeds = [1, 2, 4];
-    const h = 32;
+    const u = this.view.ui;
+    const h = Math.round(32 * u);
     const y = 16;
-    const speedW = 72;
-    const pauseW = 40;
-    const speedX = this.field.width - 20 - speedW;
+    const speedW = Math.round(72 * u);
+    const pauseW = Math.round(40 * u);
+    const speedX = this.view.x1 - 20 - speedW;
     const pauseX = speedX - 8 - pauseW;
-    const speedRect = this.add.rectangle(speedX, y, speedW, h, 0x26323f).setOrigin(0, 0);
-    const speedLabel = this.add
-      .text(speedX + speedW / 2, y + h / 2, '▶ x1', {
-        fontFamily: 'system-ui, sans-serif',
-        fontSize: '16px',
-        color: '#bfe9ff',
-      })
-      .setOrigin(0.5);
-    const pauseRect = this.add.rectangle(pauseX, y, pauseW, h, 0x26323f).setOrigin(0, 0);
-    const pauseLabel = this.add
-      .text(pauseX + pauseW / 2, y + h / 2, '⏸', {
-        fontFamily: 'system-ui, sans-serif',
-        fontSize: '16px',
-        color: '#bfe9ff',
-      })
-      .setOrigin(0.5);
-    const pauseBanner = this.add
-      .text(this.field.width / 2, this.field.height / 2, 'PAUSA', {
-        fontFamily: 'system-ui, sans-serif',
-        fontSize: '44px',
-        color: '#ffffff',
-        fontStyle: 'bold',
-      })
+    const speedRect = this.track(this.add.rectangle(speedX, y, speedW, h, 0x26323f).setOrigin(0, 0));
+    this.speedLabel = this.text(speedX + speedW / 2, y + h / 2, `▶ x${this.speed}`, {
+      fontSize: this.px(16),
+      color: '#bfe9ff',
+    }).setOrigin(0.5);
+    const pauseRect = this.track(this.add.rectangle(pauseX, y, pauseW, h, 0x26323f).setOrigin(0, 0));
+    this.pauseLabel = this.text(pauseX + pauseW / 2, y + h / 2, this.paused ? '▶' : '⏸', {
+      fontSize: this.px(16),
+      color: '#bfe9ff',
+    }).setOrigin(0.5);
+    this.pauseBanner = this.text(this.field.width / 2, this.field.height / 2, 'PAUSA', {
+      fontSize: this.px(44),
+      color: '#ffffff',
+      fontStyle: 'bold',
+    })
       .setOrigin(0.5)
       .setAlpha(0.55)
-      .setVisible(false);
-
-    const setSpeed = (v: number): void => {
-      this.speed = v;
-      speedLabel.setText(`▶ x${v}`);
-    };
-    const togglePause = (): void => {
-      if (this.terminado) return;
-      this.paused = !this.paused;
-      pauseLabel.setText(this.paused ? '▶' : '⏸');
-      pauseBanner.setVisible(this.paused);
-    };
+      .setVisible(this.paused);
 
     this.clickables.push({
       x: speedX,
@@ -302,7 +351,7 @@ export class BattleScene extends Phaser.Scene {
       rect: speedRect,
       base: 0x26323f,
       hover: 0x33465c,
-      onClick: () => setSpeed(speeds[(speeds.indexOf(this.speed) + 1) % speeds.length]),
+      onClick: () => this.setSpeed(speeds[(speeds.indexOf(this.speed) + 1) % speeds.length]),
     });
     this.clickables.push({
       x: pauseX,
@@ -312,26 +361,13 @@ export class BattleScene extends Phaser.Scene {
       rect: pauseRect,
       base: 0x26323f,
       hover: 0x33465c,
-      onClick: togglePause,
-    });
-
-    // Atajos: espacio pausa; 1, 2 y 4 fijan la velocidad.
-    const kb = this.input.keyboard;
-    kb?.on('keydown-SPACE', togglePause);
-    kb?.on('keydown-ONE', () => setSpeed(1));
-    kb?.on('keydown-TWO', () => setSpeed(2));
-    kb?.on('keydown-FOUR', () => setSpeed(4));
-    this.events.once('shutdown', () => {
-      kb?.off('keydown-SPACE', togglePause);
-      kb?.removeAllListeners('keydown-ONE');
-      kb?.removeAllListeners('keydown-TWO');
-      kb?.removeAllListeners('keydown-FOUR');
+      onClick: () => this.togglePause(),
     });
   }
 
   private addStanceControl(): void {
-    const w = 120;
-    const h = 40;
+    const w = Math.round(120 * this.view.ui);
+    const h = Math.min(Math.round(40 * this.view.ui), 66);
     const y = this.field.height - h - 12;
     const defs = [
       { stance: 'ataque' as const, text: 'ATAQUE' },
@@ -340,14 +376,11 @@ export class BattleScene extends Phaser.Scene {
     const x0 = this.field.width / 2 - w - 5;
     const items = defs.map((d, i) => {
       const x = x0 + i * (w + 10);
-      const rect = this.add.rectangle(x, y, w, h, 0x26323f).setOrigin(0, 0).setStrokeStyle(2, 0x3c4a59);
-      const label = this.add
-        .text(x + w / 2, y + h / 2, d.text, {
-          fontFamily: 'system-ui, sans-serif',
-          fontSize: '16px',
-          fontStyle: 'bold',
-        })
-        .setOrigin(0.5);
+      const rect = this.track(this.add.rectangle(x, y, w, h, 0x26323f).setOrigin(0, 0).setStrokeStyle(2, 0x3c4a59));
+      const label = this.text(x + w / 2, y + h / 2, d.text, {
+        fontSize: this.px(16),
+        fontStyle: 'bold',
+      }).setOrigin(0.5);
       return { ...d, rect, label, x };
     });
     const refresh = (): void => {
@@ -377,12 +410,19 @@ export class BattleScene extends Phaser.Scene {
   private finalizar(outcome: SimOutcome): void {
     if (this.terminado) return;
     this.terminado = true;
-    const victoria = outcome === 'victoria';
+    this.outcome = outcome;
+    this.layout();
+  }
 
-    // Capa oscura.
-    const overlay = this.add.graphics();
+  /** Capa de resultado con resumen y botones (se reconstruye al redimensionar). */
+  private showEndOverlay(outcome: SimOutcome): void {
+    const victoria = outcome === 'victoria';
+    const v = this.view;
+
+    // Capa oscura sobre toda la pantalla visible.
+    const overlay = this.track(this.add.graphics());
     overlay.fillStyle(0x000000, 0.6);
-    overlay.fillRect(0, 0, this.field.width, this.field.height);
+    overlay.fillRect(v.x0, v.y0, v.x1 - v.x0, v.y1 - v.y0);
 
     const esCampania = victoria && this.estado.esUltima;
     const titulo = esCampania
@@ -392,14 +432,11 @@ export class BattleScene extends Phaser.Scene {
         : 'DERROTA';
     const color = victoria ? '#7fe9b8' : '#ff8a8a';
 
-    this.add
-      .text(this.field.width / 2, this.field.height / 2 - 215, titulo, {
-        fontFamily: 'system-ui, sans-serif',
-        fontSize: '40px',
-        color,
-        fontStyle: 'bold',
-      })
-      .setOrigin(0.5);
+    this.text(this.field.width / 2, this.field.height / 2 - 235, titulo, {
+      fontSize: this.px(40),
+      color,
+      fontStyle: 'bold',
+    }).setOrigin(0.5);
 
     const cx = this.field.width / 2;
     let vJ = 0;
@@ -409,19 +446,17 @@ export class BattleScene extends Phaser.Scene {
       if (u.team === 'jugador') vJ++;
       else vR++;
     }
-    const restantes = `Supervivientes — tú: ${vJ} · rival: ${vR}   ·   Base: ${Math.max(
+    const restantes = `Supervivientes — tú: ${vJ} · rival: ${vR}\nBase: ${Math.max(
       0,
       Math.round(this.sim.bases.jugador.hp),
     )}/${this.sim.bases.jugador.maxHp}   ·   Duración: ${Math.round(this.sim.tiempo)} s`;
-    this.add
-      .text(cx, this.field.height / 2 - 165, restantes, {
-        fontFamily: 'system-ui, sans-serif',
-        fontSize: '16px',
-        color: '#cdd6e0',
-      })
-      .setOrigin(0.5);
+    this.text(cx, this.field.height / 2 - 170, restantes, {
+      fontSize: this.px(16),
+      color: '#cdd6e0',
+      align: 'center',
+    }).setOrigin(0.5);
 
-    this.addSummaryTable(cx, this.field.height / 2 - 130);
+    this.addSummaryTable(cx, this.field.height / 2 - 125);
 
     if (victoria && !esCampania) {
       this.makeButton(this.field.width / 2, this.field.height / 2 + 150, 'Siguiente oleada', 0x46c08a, () => {
@@ -429,10 +464,10 @@ export class BattleScene extends Phaser.Scene {
         this.scene.start('Deploy');
       });
     } else if (!victoria) {
-      this.makeButton(this.field.width / 2 - 120, this.field.height / 2 + 150, 'Reintentar oleada', 0x4f7bd6, () => {
+      this.makeButton(this.field.width / 2 - 120 * this.view.ui, this.field.height / 2 + 150, 'Reintentar oleada', 0x4f7bd6, () => {
         this.scene.start('Deploy');
       });
-      this.makeButton(this.field.width / 2 + 120, this.field.height / 2 + 150, 'Reiniciar campaña', 0x8a93a0, () => {
+      this.makeButton(this.field.width / 2 + 120 * this.view.ui, this.field.height / 2 + 150, 'Reiniciar campaña', 0x8a93a0, () => {
         this.estado.reiniciar();
         this.scene.start('Deploy');
       });
@@ -474,33 +509,26 @@ export class BattleScene extends Phaser.Scene {
     }
     lineas.push('');
     lineas.push(fila('Rival (total)', String(rDesp), String(rBajas), String(Math.round(rDano)), ''));
-    this.add
-      .text(cx, y, lineas.join('\n'), {
-        fontFamily: 'monospace',
-        fontSize: '15px',
-        color: '#dfe7ef',
-        lineSpacing: 5,
-      })
-      .setOrigin(0.5, 0);
+    this.text(cx, y, lineas.join('\n'), {
+      fontFamily: 'monospace',
+      fontSize: this.px(15),
+      color: '#dfe7ef',
+      lineSpacing: 5,
+    }).setOrigin(0.5, 0);
   }
 
   private makeButton(cx: number, cy: number, label: string, tint: number, onClick: () => void): void {
-    const w = 210;
-    const h = 52;
+    const w = Math.round(210 * this.view.ui);
+    const h = Math.min(Math.round(52 * this.view.ui), 70);
     const hover = Phaser.Display.Color.IntegerToColor(tint).clone().brighten(15).color;
 
-    const rect = this.add
-      .rectangle(cx, cy, w, h, tint)
-      .setStrokeStyle(2, 0xffffff, 0.25);
+    const rect = this.track(this.add.rectangle(cx, cy, w, h, tint).setStrokeStyle(2, 0xffffff, 0.25));
 
-    this.add
-      .text(cx, cy, label, {
-        fontFamily: 'system-ui, sans-serif',
-        fontSize: '18px',
-        color: '#10171f',
-        fontStyle: 'bold',
-      })
-      .setOrigin(0.5);
+    this.text(cx, cy, label, {
+      fontSize: this.px(18),
+      color: '#10171f',
+      fontStyle: 'bold',
+    }).setOrigin(0.5);
 
     // Registramos el botón como clickable de escena (hit-test manual fiable).
     this.clickables.push({

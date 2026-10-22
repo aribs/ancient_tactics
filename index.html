@@ -2,7 +2,11 @@
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="theme-color" content="#20262e" />
     <title>Choque de Ejércitos — Prototipo</title>
     <style>
       :root {
@@ -12,24 +16,60 @@
       body {
         margin: 0;
         padding: 0;
-        background: #15181d;
+        /* Mismo color que el fondo del juego: el lienzo ocupa toda la ventana. */
+        background: #20262e;
         color: #d7dde5;
         font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
         overflow: hidden;
+        overscroll-behavior: none;
+        -webkit-user-select: none;
+        user-select: none;
+        -webkit-tap-highlight-color: transparent;
       }
       #app {
+        position: fixed;
+        inset: 0;
         width: 100vw;
         height: 100vh;
+        height: 100dvh;
+        touch-action: none;
       }
       canvas {
         display: block;
-        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
-        border-radius: 4px;
+      }
+      /* Móvil en vertical: el juego está pensado para horizontal. */
+      #girar {
+        display: none;
+        position: fixed;
+        inset: 0;
+        z-index: 10;
+        background: #20262e;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        gap: 16px;
+        text-align: center;
+        padding: 24px;
+        font-size: 18px;
+      }
+      #girar .icono {
+        font-size: 56px;
+        animation: girar 2s ease-in-out infinite;
+      }
+      @keyframes girar {
+        0%, 30% { transform: rotate(0deg); }
+        60%, 100% { transform: rotate(90deg); }
+      }
+      @media (orientation: portrait) and (pointer: coarse) {
+        #girar {
+          display: flex;
+        }
       }
     </style>
   </head>
   <body>
     <div id="app"></div>
+    <div id="girar"><div class="icono">📱</div><div>Gira el móvil para jugar en horizontal</div></div>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>
