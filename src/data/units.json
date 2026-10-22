@@ -1,0 +1,97 @@
+{
+  "legionario": {
+    "id": "legionario",
+    "nombre": "Legionario",
+    "rol": "Cuerpo a cuerpo, aguanta la línea",
+    "hp": 140,
+    "damage": 11,
+    "attackRange": 18,
+    "attackCooldown": 0.8,
+    "speed": 46,
+    "aggroRange": 150,
+    "radius": 10,
+    "cost": 11,
+    "color": "#4f7bd6",
+    "bonusVs": {
+      "caballeria": 2.0
+    }
+  },
+  "lancero": {
+    "id": "lancero",
+    "nombre": "Lancero",
+    "rol": "Lanza larga; frena a la caballería, frágil ante arqueros",
+    "hp": 105,
+    "damage": 10,
+    "attackRange": 30,
+    "attackCooldown": 0.9,
+    "speed": 44,
+    "aggroRange": 150,
+    "radius": 10,
+    "cost": 12,
+    "color": "#d4cf5a",
+    "bonusVs": {
+      "caballeria": 2.6
+    },
+    "desbloqueoOleada": 2
+  },
+  "arquero": {
+    "id": "arquero",
+    "nombre": "Arquero",
+    "rol": "A distancia, frágil",
+    "hp": 46,
+    "damage": 11,
+    "attackRange": 150,
+    "attackCooldown": 1.05,
+    "speed": 38,
+    "aggroRange": 190,
+    "radius": 8,
+    "cost": 14,
+    "color": "#46c08a",
+    "bonusVs": {
+      "legionario": 1.6,
+      "elefante": 1.3,
+      "lancero": 1.3
+    }
+  },
+  "caballeria": {
+    "id": "caballeria",
+    "nombre": "Caballería",
+    "rol": "Rápida, flanquea",
+    "hp": 112,
+    "damage": 15,
+    "attackRange": 20,
+    "attackCooldown": 0.7,
+    "speed": 105,
+    "aggroRange": 250,
+    "radius": 10,
+    "cost": 15,
+    "color": "#d6a24f",
+    "bonusVs": {
+      "arquero": 2.2
+    },
+    "prefiereObjetivo": "arquero"
+  },
+  "elefante": {
+    "id": "elefante",
+    "nombre": "Elefante de guerra",
+    "nombreCorto": "Elefante",
+    "rol": "Tanque lento, carísimo; débil ante muchos arqueros",
+    "hp": 680,
+    "damage": 31,
+    "attackRange": 24,
+    "attackCooldown": 1.2,
+    "speed": 32,
+    "aggroRange": 150,
+    "radius": 17,
+    "cost": 45,
+    "color": "#9a8fb0",
+    "bonusVs": {
+      "caballeria": 1.5
+    },
+    "desbloqueoOleada": 3,
+    "panico": {
+      "umbralHp": 0.25
+    },
+    "desbloqueoRival": 5
+  }
+}

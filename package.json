@@ -1,0 +1,22 @@
+{
+  "name": "tower-defense-romanos-griegos",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Tower defense de choque de ejércitos romanos y griegos (prototipo gris)",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "sim": "tsx src/sim/headless.ts"
+  },
+  "dependencies": {
+    "phaser": "^3.80.1"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3",
+    "vite": "^5.4.10"
+  }
+}

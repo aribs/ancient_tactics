@@ -1,0 +1,126 @@
+{
+  "bonusVictoria": 15,
+  "oleadas": [
+    {
+      "id": 1,
+      "nombre": "Escaramuza",
+      "presupuestoJugador": 60,
+      "campo": {
+        "ancho": 1000,
+        "alto": 400,
+        "columnas": 4,
+        "filas": 5
+      },
+      "terreno": {
+        "min": 3,
+        "max": 5
+      },
+      "rival": {
+        "legionario": 2,
+        "arquero": 2
+      }
+    },
+    {
+      "id": 2,
+      "nombre": "Avance",
+      "presupuestoJugador": 85,
+      "campo": {
+        "ancho": 1150,
+        "alto": 440,
+        "columnas": 5,
+        "filas": 5
+      },
+      "terreno": {
+        "min": 4,
+        "max": 6
+      },
+      "rival": {
+        "legionario": 4,
+        "arquero": 3,
+        "caballeria": 1
+      }
+    },
+    {
+      "id": 3,
+      "nombre": "Ofensiva",
+      "presupuestoJugador": 115,
+      "campo": {
+        "ancho": 1300,
+        "alto": 500,
+        "columnas": 5,
+        "filas": 6
+      },
+      "terreno": {
+        "min": 6,
+        "max": 8
+      },
+      "rival": {
+        "legionario": 5,
+        "arquero": 6,
+        "caballeria": 2
+      }
+    },
+    {
+      "id": 4,
+      "nombre": "Asalto",
+      "presupuestoJugador": 150,
+      "campo": {
+        "ancho": 1450,
+        "alto": 560,
+        "columnas": 6,
+        "filas": 6
+      },
+      "terreno": {
+        "min": 8,
+        "max": 10
+      },
+      "rival": {
+        "legionario": 7,
+        "arquero": 7,
+        "caballeria": 3
+      }
+    },
+    {
+      "id": 5,
+      "nombre": "Cerco",
+      "presupuestoJugador": 190,
+      "campo": {
+        "ancho": 1600,
+        "alto": 620,
+        "columnas": 6,
+        "filas": 7
+      },
+      "terreno": {
+        "min": 10,
+        "max": 13
+      },
+      "rival": {
+        "legionario": 5,
+        "arquero": 9,
+        "caballeria": 5,
+        "elefante": 1
+      }
+    },
+    {
+      "id": 6,
+      "nombre": "Asalto final",
+      "presupuestoJugador": 240,
+      "campo": {
+        "ancho": 1760,
+        "alto": 680,
+        "columnas": 7,
+        "filas": 8
+      },
+      "terreno": {
+        "min": 12,
+        "max": 16
+      },
+      "rival": {
+        "legionario": 6,
+        "arquero": 9,
+        "caballeria": 7,
+        "elefante": 2
+      }
+    }
+  ]
+}

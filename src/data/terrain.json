@@ -1,0 +1,38 @@
+{
+  "roca": {
+    "id": "roca",
+    "nombre": "Roca",
+    "impassable": true,
+    "blocksLoS": true,
+    "speedMult": 1.0,
+    "rangedDamageMult": 1.0,
+    "color": "#6b6f76",
+    "minRadius": 24,
+    "maxRadius": 40,
+    "peso": 0.4
+  },
+  "bosque": {
+    "id": "bosque",
+    "nombre": "Bosque",
+    "impassable": false,
+    "blocksLoS": false,
+    "speedMult": 0.5,
+    "rangedDamageMult": 0.5,
+    "color": "#3f6b43",
+    "minRadius": 34,
+    "maxRadius": 54,
+    "peso": 0.35
+  },
+  "barro": {
+    "id": "barro",
+    "nombre": "Barro",
+    "impassable": false,
+    "blocksLoS": false,
+    "speedMult": 0.55,
+    "rangedDamageMult": 1.0,
+    "color": "#6e5a3c",
+    "minRadius": 30,
+    "maxRadius": 48,
+    "peso": 0.25
+  }
+}
