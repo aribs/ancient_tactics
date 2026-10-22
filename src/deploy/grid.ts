@@ -4,7 +4,7 @@
 
 import type { Battlefield, Team } from '../sim/types';
 
-/** Margen desde la base hasta la primera columna, y separaciones. */
+/** Posición de la primera columna (desde el borde) y separaciones. */
 const COL_GAP = 70;
 const ROW_GAP = 72;
 const PLAYER_FIRST_COL_X = 130;
@@ -24,7 +24,7 @@ export function cellCenter(
   col: number,
   row: number,
 ): { x: number; y: number } {
-  const topY = field.baseY - ((field.rows - 1) * ROW_GAP) / 2;
+  const topY = field.midY - ((field.rows - 1) * ROW_GAP) / 2;
   const y = topY + row * ROW_GAP;
   const playerX = PLAYER_FIRST_COL_X + col * COL_GAP;
   const x = team === 'jugador' ? playerX : field.width - playerX;
@@ -47,7 +47,7 @@ export function cells(field: Battlefield, team: Team): Cell[] {
 
 /** Centro de la cuadrícula del jugador. */
 export function gridCenter(field: Battlefield): { x: number; y: number } {
-  return { x: PLAYER_FIRST_COL_X + ((field.cols - 1) * COL_GAP) / 2, y: field.baseY };
+  return { x: PLAYER_FIRST_COL_X + ((field.cols - 1) * COL_GAP) / 2, y: field.midY };
 }
 
 /** Medio ancho/alto de celda, para dibujar y para detectar clics. */

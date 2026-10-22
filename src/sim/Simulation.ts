@@ -3,12 +3,12 @@
 // ejecutarse en bucle sin gráficos y equilibrar.
 //
 // Modelo: dos ejércitos (jugador a la izquierda, rival a la derecha) avanzan
-// hacia la base contraria. Cada unidad persigue al enemigo vivo más cercano
-// dentro de su aggro; si no hay ninguno, avanza hacia la base rival y la
-// ataca al llegar. La batalla termina cuando un ejército es aniquilado o cae
-// una base.
+// hacia el extremo contrario del campo. Cada unidad persigue al enemigo vivo
+// más cercano dentro de su aggro; si no hay ninguno, sigue la marcha en línea
+// y, al llegar al extremo, busca al enemigo más cercano esté donde esté. La
+// batalla termina cuando un ejército es aniquilado.
 
-import { BASE_HP, BASE_RADIUS, UNITS } from './data';
+import { UNITS } from './data';
 import { Rng } from './rng';
 import { defensiveAnchor, DEFENSE_DAMAGE_TAKEN, DEFENSE_LEASH, type Stance } from './stance';
 import {
@@ -21,7 +21,6 @@ import {
 import type {
   Battlefield,
   PlacedUnit,
-  SimBase,
   SimEvent,
   SimOutcome,
   SimUnit,
@@ -33,10 +32,14 @@ import type {
 /** Paso de simulación fijo (s). El render interpola/acumula contra esto. */
 export const SIM_DT = 1 / 30;
 
+/** Destino de la marcha: a esta distancia del borde contrario, en el centro vertical. */
+const MARCH_MARGIN = 46;
+/** Radio del destino de marcha: se da por alcanzado al tenerlo «a tiro» con este margen. */
+const MARCH_GOAL_RADIUS = 28;
+
 export class Simulation {
   readonly field: Battlefield;
   units: SimUnit[] = [];
-  bases: Record<Team, SimBase>;
   outcome: SimOutcome = 'en_curso';
   tiempo = 0;
 
@@ -72,10 +75,6 @@ export class Simulation {
     this.difficult = this.terrain.filter(
       (f) => !TERRAIN[f.kind].impassable && TERRAIN[f.kind].speedMult < 1,
     );
-    this.bases = {
-      jugador: this.makeBase('jugador', field.playerBaseX),
-      rival: this.makeBase('rival', field.rivalBaseX),
-    };
     for (const p of placed) {
       this.units.push(this.makeUnit(p));
     }
@@ -88,18 +87,6 @@ export class Simulation {
       if (u.team !== 'jugador') continue;
       u.home = stance === 'defensa' ? defensiveAnchor(this.field, u.start.x, u.start.y) : undefined;
     }
-  }
-
-  private makeBase(team: Team, x: number): SimBase {
-    return {
-      team,
-      x,
-      y: this.field.baseY,
-      hp: BASE_HP,
-      maxHp: BASE_HP,
-      radius: BASE_RADIUS,
-      alive: true,
-    };
   }
 
   private makeUnit(p: PlacedUnit): SimUnit {
@@ -182,7 +169,7 @@ export class Simulation {
     const puedeGolpear =
       dist <= reach && (!ranged || this.hasLineOfSight(u.x, u.y, target.x, target.y));
 
-    if (puedeGolpear) {
+    if (puedeGolpear && target.kind === 'unit') {
       // En alcance y con visión: atacar si el cooldown lo permite.
       if (u.cooldown <= 0) {
         this.attack(u, target);
@@ -214,7 +201,10 @@ export class Simulation {
     u.y = clamp(resuelto.y, this.field.playTop, this.field.playBottom);
   }
 
-  /** Objetivo: enemigo vivo más cercano dentro de aggro; si no, la base rival. */
+  /**
+   * Objetivo: enemigo vivo más cercano dentro de aggro; si no, el punto de
+   * marcha del extremo contrario; ya allí, el enemigo más cercano esté donde esté.
+   */
   private acquireTarget(u: SimUnit): Targetable | null {
     if (this.enPanico(u)) {
       // Pánico: ataca a la unidad viva más cercana, sea del bando que sea.
@@ -265,21 +255,23 @@ export class Simulation {
       return { id: best.id, x: best.x, y: best.y, radius: best.stats.radius, kind: 'unit', unit: best };
     }
 
-    // En defensa no se marcha hacia la base rival: se espera en el puesto.
+    // En defensa no se sale a buscar al enemigo: se espera en el puesto.
     if (u.home) {
       u.targetId = null;
       return null;
     }
 
-    // Sin enemigos cerca: marchar hacia la base contraria.
-    const base = this.bases[enemyTeamId];
-    if (base.alive) {
-      u.targetId = -1;
-      return { id: -1, x: base.x, y: base.y, radius: base.radius, kind: 'base', base };
+    // Sin enemigos cerca: marchar en línea hacia el extremo contrario. Ir
+    // directo al enemigo más cercano dispersa el ejército y lo hace llegar
+    // a goteo, así que eso solo se hace al terminar la marcha.
+    const goalX = u.team === 'jugador' ? this.field.width - MARCH_MARGIN : MARCH_MARGIN;
+    const goalY = this.field.midY;
+    if (Math.hypot(goalX - u.x, goalY - u.y) > u.stats.attackRange + MARCH_GOAL_RADIUS) {
+      u.targetId = null;
+      return { id: -1, x: goalX, y: goalY, radius: MARCH_GOAL_RADIUS, kind: 'march' };
     }
 
-    // Si no quedan enemigos cerca y la base ya cayó, buscar el enemigo más
-    // lejano igualmente (para rematar).
+    // Marcha terminada: ir a por el enemigo más cercano, esté donde esté.
     if (best) {
       u.targetId = best.id;
       return { id: best.id, x: best.x, y: best.y, radius: best.stats.radius, kind: 'unit', unit: best };
@@ -288,33 +280,28 @@ export class Simulation {
     return null;
   }
 
-  private attack(u: SimUnit, target: Targetable): void {
+  private attack(u: SimUnit, target: Extract<Targetable, { kind: 'unit' }>): void {
     const ranged = u.stats.attackRange > 60;
-    if (target.kind === 'unit') {
-      const mult = this.damageMultiplier(u.type, target.unit.type);
-      // Cobertura: el bosque reduce el daño a distancia a quien está dentro.
-      const cover = ranged ? this.coverMultAt(target.unit.x, target.unit.y) : 1;
-      // Pequeña varianza determinista para que las batallas no sean idénticas.
-      const variance = this.rng.range(0.9, 1.1);
-      const formation =
-        target.unit.home && Math.hypot(target.unit.x - target.unit.home.x, target.unit.y - target.unit.home.y) < 40
-          ? DEFENSE_DAMAGE_TAKEN
-          : 1;
-      const dmg = u.stats.damage * mult * cover * variance * formation;
-      const victima = target.unit;
-      const aplicado = Math.min(dmg, Math.max(0, victima.hp));
-      victima.hp -= dmg;
-      // El fuego amigo (pánico) no cuenta como daño ni muerte del atacante.
-      const propio = this.statsOf(u.team, u.type);
-      if (victima.team !== u.team) propio.dano += aplicado;
-      if (victima.hp <= 0 && victima.alive) {
-        victima.alive = false;
-        this.statsOf(victima.team, victima.type).bajas++;
-        if (victima.team !== u.team) propio.muertes++;
-      }
-    } else {
-      target.base.hp -= u.stats.damage;
-      if (target.base.hp <= 0) target.base.alive = false;
+    const mult = this.damageMultiplier(u.type, target.unit.type);
+    // Cobertura: el bosque reduce el daño a distancia a quien está dentro.
+    const cover = ranged ? this.coverMultAt(target.unit.x, target.unit.y) : 1;
+    // Pequeña varianza determinista para que las batallas no sean idénticas.
+    const variance = this.rng.range(0.9, 1.1);
+    const formation =
+      target.unit.home && Math.hypot(target.unit.x - target.unit.home.x, target.unit.y - target.unit.home.y) < 40
+        ? DEFENSE_DAMAGE_TAKEN
+        : 1;
+    const dmg = u.stats.damage * mult * cover * variance * formation;
+    const victima = target.unit;
+    const aplicado = Math.min(dmg, Math.max(0, victima.hp));
+    victima.hp -= dmg;
+    // El fuego amigo (pánico) no cuenta como daño ni muerte del atacante.
+    const propio = this.statsOf(u.team, u.type);
+    if (victima.team !== u.team) propio.dano += aplicado;
+    if (victima.hp <= 0 && victima.alive) {
+      victima.alive = false;
+      this.statsOf(victima.team, victima.type).bajas++;
+      if (victima.team !== u.team) propio.muertes++;
     }
 
     this.events.push({
@@ -416,8 +403,8 @@ export class Simulation {
     const jugadorVivos = this.countAlive('jugador');
     const rivalVivos = this.countAlive('rival');
 
-    // El jugador defiende: pierde si cae su base o su ejército.
-    if (!this.bases.jugador.alive || jugadorVivos === 0) {
+    // Pierde quien se queda sin ejército.
+    if (jugadorVivos === 0) {
       this.outcome = 'derrota';
       return;
     }
@@ -443,7 +430,7 @@ export class Simulation {
 
 type Targetable =
   | { id: number; x: number; y: number; radius: number; kind: 'unit'; unit: SimUnit }
-  | { id: number; x: number; y: number; radius: number; kind: 'base'; base: SimBase };
+  | { id: number; x: number; y: number; radius: number; kind: 'march' };
 
 function clamp(v: number, min: number, max: number): number {
   return v < min ? min : v > max ? max : v;

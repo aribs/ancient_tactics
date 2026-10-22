@@ -12,7 +12,7 @@ import { defensiveAnchor, type Stance } from '../sim/stance';
 import { Rng } from '../sim/rng';
 import { generateTerrain, type TerrainFeature } from '../sim/terrain';
 import type { Battlefield, PlacedUnit, UnitType } from '../sim/types';
-import { drawTerrain, drawUnitShape, TEAM_TINT } from './draw';
+import { drawTerrain, drawUnitShape } from './draw';
 import { fitToScreen, onScreenResize, requestFullscreenOnTouch, sharpenTexts, type View } from './layout';
 
 interface PaletteButton {
@@ -231,22 +231,11 @@ export class DeployScene extends Phaser.Scene {
     const drng = new Rng((this.estado.seed ^ 0x51ed2701) >>> 0);
     for (const f of this.terrain) drawTerrain(g, f, () => drng.next());
 
-    // Bases.
-    this.drawBase(g, this.field.playerBaseX, this.field.baseY, TEAM_TINT.jugador);
-    this.drawBase(g, this.field.rivalBaseX, this.field.baseY, TEAM_TINT.rival);
-
     // Celdas del jugador.
     g.lineStyle(1, 0x5fd3ff, 0.35);
     for (const c of this.playerCells) {
       g.strokeRect(c.x - CELL_HALF_W, c.y - CELL_HALF_H, CELL_HALF_W * 2, CELL_HALF_H * 2);
     }
-  }
-
-  private drawBase(g: Phaser.GameObjects.Graphics, x: number, y: number, tint: number): void {
-    g.fillStyle(0x1a1f27, 1);
-    g.lineStyle(3, tint, 1);
-    g.fillCircle(x, y, 26);
-    g.strokeCircle(x, y, 26);
   }
 
   private redraw(): void {

@@ -62,18 +62,8 @@ export interface SimUnit {
   start: { x: number; y: number };
   /** Puesto defensivo; solo si el equipo está en postura de defensa. */
   home?: { x: number; y: number };
-  /** id del objetivo actual (unidad o base), o null. */
+  /** id de la unidad objetivo actual, o null. */
   targetId: number | null;
-  alive: boolean;
-}
-
-export interface SimBase {
-  team: Team;
-  x: number;
-  y: number;
-  hp: number;
-  maxHp: number;
-  radius: number;
   alive: boolean;
 }
 
@@ -111,9 +101,8 @@ export interface Battlefield {
   /** Límites verticales de la zona de juego. */
   playTop: number;
   playBottom: number;
-  playerBaseX: number;
-  rivalBaseX: number;
-  baseY: number;
+  /** Centro vertical del campo (eje de las cuadrículas de despliegue). */
+  midY: number;
   /** Tamaño de la cuadrícula de despliegue de cada bando. */
   cols: number;
   rows: number;

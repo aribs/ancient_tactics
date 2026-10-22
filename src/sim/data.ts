@@ -45,16 +45,11 @@ export function fieldFor(wave: WaveDef): Battlefield {
     height,
     playTop: HUD_BAND,
     playBottom: HUD_BAND + alto,
-    playerBaseX: 46,
-    rivalBaseX: ancho - 46,
-    baseY: height / 2,
+    midY: height / 2,
     cols: columnas,
     rows: filas,
   };
 }
-
-export const BASE_HP = 500;
-export const BASE_RADIUS = 28;
 
 /** Coste de desplegar un conjunto de unidades, por tipo y cantidad. */
 export function costeDe(composicion: Partial<Record<UnitType, number>>): number {

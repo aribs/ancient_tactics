@@ -218,17 +218,6 @@ export class BattleScene extends Phaser.Scene {
     const g = this.gUnits;
     g.clear();
 
-    // Bases con barra de vida.
-    for (const team of ['jugador', 'rival'] as const) {
-      const b = this.sim.bases[team];
-      if (!b.alive) continue;
-      g.fillStyle(0x1a1f27, 1);
-      g.lineStyle(3, TEAM_TINT[team], 1);
-      g.fillCircle(b.x, b.y, b.radius);
-      g.strokeCircle(b.x, b.y, b.radius);
-      this.hpBar(g, b.x, b.y - b.radius - 10, 54, b.hp / b.maxHp, TEAM_TINT[team]);
-    }
-
     // Unidades con barra de vida.
     for (const u of this.sim.units) {
       if (!u.alive) continue;
@@ -446,10 +435,7 @@ export class BattleScene extends Phaser.Scene {
       if (u.team === 'jugador') vJ++;
       else vR++;
     }
-    const restantes = `Supervivientes — tú: ${vJ} · rival: ${vR}\nBase: ${Math.max(
-      0,
-      Math.round(this.sim.bases.jugador.hp),
-    )}/${this.sim.bases.jugador.maxHp}   ·   Duración: ${Math.round(this.sim.tiempo)} s`;
+    const restantes = `Supervivientes — tú: ${vJ} · rival: ${vR}   ·   Duración: ${Math.round(this.sim.tiempo)} s`;
     this.text(cx, this.field.height / 2 - 170, restantes, {
       fontSize: this.px(16),
       color: '#cdd6e0',

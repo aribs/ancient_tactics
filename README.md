@@ -29,7 +29,7 @@ Requiere Node 18+.
    derecha muestran el ejército rival de esta oleada.
 2. **Batalla:** pulsa *Comenzar*. El combate se resuelve solo. Puedes acelerar
    (x1/x2/x4, o las teclas `1`, `2`, `4`), pausar (`Espacio`) y cambiar de
-   postura (ataque/defensa). Ganas la oleada si aniquilas al rival; pierdes si cae tu base o tu
+   postura (ataque/defensa). Ganas la oleada si aniquilas al rival; pierdes si cae tu
    ejército.
 3. **Resumen:** al acabar ves por tipo de unidad las bajas, el daño y las
    muertes, con una ★ en la más destacada.
