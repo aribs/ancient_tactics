@@ -1,5 +1,5 @@
 {
-  "bonusVictoria": 15,
+  "bonusVictoria": 8,
   "oleadas": [
     {
       "id": 1,
@@ -23,7 +23,7 @@
     {
       "id": 2,
       "nombre": "Avance",
-      "presupuestoJugador": 85,
+      "presupuestoJugador": 82,
       "campo": {
         "ancho": 1150,
         "alto": 440,
@@ -95,8 +95,8 @@
         "max": 13
       },
       "rival": {
-        "legionario": 5,
-        "arquero": 9,
+        "legionario": 7,
+        "arquero": 10,
         "caballeria": 5,
         "elefante": 1
       }
@@ -116,9 +116,9 @@
         "max": 16
       },
       "rival": {
-        "legionario": 6,
+        "legionario": 7,
         "arquero": 9,
-        "caballeria": 7,
+        "caballeria": 6,
         "elefante": 2
       }
     }
