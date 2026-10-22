@@ -64,6 +64,8 @@ export interface SimUnit {
   home?: { x: number; y: number };
   /** id de la unidad objetivo actual, o null. */
   targetId: number | null;
+  /** Ya llegó al extremo contrario: en adelante caza al enemigo más cercano, sin volver a marchar. */
+  marchaHecha?: boolean;
   alive: boolean;
 }
 

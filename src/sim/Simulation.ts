@@ -266,9 +266,14 @@ export class Simulation {
     // a goteo, así que eso solo se hace al terminar la marcha.
     const goalX = u.team === 'jugador' ? this.field.width - MARCH_MARGIN : MARCH_MARGIN;
     const goalY = this.field.midY;
-    if (Math.hypot(goalX - u.x, goalY - u.y) > u.stats.attackRange + MARCH_GOAL_RADIUS) {
-      u.targetId = null;
-      return { id: -1, x: goalX, y: goalY, radius: MARCH_GOAL_RADIUS, kind: 'march' };
+    if (!u.marchaHecha) {
+      if (Math.hypot(goalX - u.x, goalY - u.y) > u.stats.attackRange + MARCH_GOAL_RADIUS) {
+        u.targetId = null;
+        return { id: -1, x: goalX, y: goalY, radius: MARCH_GOAL_RADIUS, kind: 'march' };
+      }
+      // Una vez allí no se vuelve a marchar: si no, al alejarse para cazar se
+      // saldría del destino y oscilaría en el borde sin terminar la batalla.
+      u.marchaHecha = true;
     }
 
     // Marcha terminada: ir a por el enemigo más cercano, esté donde esté.
