@@ -1,7 +1,6 @@
 {
   "legionario": {
     "id": "legionario",
-    "nombre": "Legionario",
     "rol": "Cuerpo a cuerpo, aguanta la línea",
     "hp": 140,
     "damage": 11,
@@ -18,7 +17,6 @@
   },
   "arquero": {
     "id": "arquero",
-    "nombre": "Arquero",
     "rol": "A distancia, frágil",
     "hp": 46,
     "damage": 11,
@@ -36,7 +34,6 @@
   },
   "caballeria": {
     "id": "caballeria",
-    "nombre": "Caballería",
     "rol": "Rápida, flanquea",
     "hp": 112,
     "damage": 15,
@@ -54,8 +51,6 @@
   },
   "elefante": {
     "id": "elefante",
-    "nombre": "Elefante de guerra",
-    "nombreCorto": "Elefante",
     "rol": "Tanque lento, carísimo; débil ante muchos arqueros",
     "hp": 680,
     "damage": 31,

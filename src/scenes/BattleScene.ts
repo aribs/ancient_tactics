@@ -1,11 +1,13 @@
 import Phaser from 'phaser';
 import type { GameState } from '../game/GameState';
-import { HUD_BAND, UNITS, UNIT_TYPES } from '../sim/data';
+import { HUD_BAND, UNIT_TYPES } from '../sim/data';
+import { t, toggleLang, unitShortName } from '../i18n';
 import { Rng } from '../sim/rng';
 import { Simulation, SIM_DT } from '../sim/Simulation';
 import type { TerrainFeature } from '../sim/terrain';
 import type { Battlefield, PlacedUnit, SimOutcome } from '../sim/types';
 import { drawTerrain, drawUnitShape, TEAM_TINT } from './draw';
+import { addLanguageButton } from './langButton';
 import { fitToScreen, onScreenResize, sharpenTexts, type View } from './layout';
 
 interface BattleData {
@@ -106,13 +108,14 @@ export class BattleScene extends Phaser.Scene {
 
     this.drawField(this.seed);
     // Se oculta con la pantalla de resultado, que usa la misma franja superior.
-    this.text(this.field.width / 2, 24, 'Cambia de postura cuando quieras', {
+    this.text(this.field.width / 2, 24, t('battle.stanceHint'), {
       fontSize: this.px(18),
       color: '#dfe7ef',
     })
       .setOrigin(0.5, 0)
       .setVisible(!this.outcome);
 
+    this.addLanguageControl();
     this.addSpeedControl();
     this.addStanceControl();
     if (this.outcome) this.showEndOverlay(this.outcome);
@@ -304,6 +307,21 @@ export class BattleScene extends Phaser.Scene {
     });
   }
 
+  private addLanguageControl(): void {
+    const btn = addLanguageButton(this.text.bind(this), this.view, (n) => this.px(n));
+    const b = btn.getBounds();
+    this.clickables.push({
+      x: b.x,
+      y: b.y,
+      w: b.width,
+      h: b.height,
+      onClick: () => {
+        toggleLang();
+        this.layout();
+      },
+    });
+  }
+
   private addSpeedControl(): void {
     const speeds = [1, 2, 4];
     const u = this.view.ui;
@@ -323,7 +341,7 @@ export class BattleScene extends Phaser.Scene {
       fontSize: this.px(16),
       color: '#bfe9ff',
     }).setOrigin(0.5);
-    this.pauseBanner = this.text(this.field.width / 2, this.field.height / 2, 'PAUSA', {
+    this.pauseBanner = this.text(this.field.width / 2, this.field.height / 2, t('battle.pause'), {
       fontSize: this.px(44),
       color: '#ffffff',
       fontStyle: 'bold',
@@ -359,8 +377,8 @@ export class BattleScene extends Phaser.Scene {
     const h = Math.min(Math.round(40 * this.view.ui), 66);
     const y = this.field.height - h - 12;
     const defs = [
-      { stance: 'ataque' as const, text: 'ATAQUE' },
-      { stance: 'defensa' as const, text: 'DEFENSA' },
+      { stance: 'ataque' as const, text: t('stance.ataque') },
+      { stance: 'defensa' as const, text: t('stance.defensa') },
     ];
     const x0 = this.field.width / 2 - w - 5;
     const items = defs.map((d, i) => {
@@ -415,10 +433,10 @@ export class BattleScene extends Phaser.Scene {
 
     const esCampania = victoria && this.estado.esUltima;
     const titulo = esCampania
-      ? '¡CAMPAÑA COMPLETADA!'
+      ? t('battle.victoryCampaign')
       : victoria
-        ? '¡VICTORIA EN LA OLEADA!'
-        : 'DERROTA';
+        ? t('battle.victoryWave')
+        : t('battle.defeat');
     const color = victoria ? '#7fe9b8' : '#ff8a8a';
 
     this.text(this.field.width / 2, this.field.height / 2 - 235, titulo, {
@@ -435,7 +453,7 @@ export class BattleScene extends Phaser.Scene {
       if (u.team === 'jugador') vJ++;
       else vR++;
     }
-    const restantes = `Supervivientes — tú: ${vJ} · rival: ${vR}   ·   Duración: ${Math.round(this.sim.tiempo)} s`;
+    const restantes = t('battle.survivors', { mine: vJ, rival: vR, seconds: Math.round(this.sim.tiempo) });
     this.text(cx, this.field.height / 2 - 170, restantes, {
       fontSize: this.px(16),
       color: '#cdd6e0',
@@ -445,20 +463,20 @@ export class BattleScene extends Phaser.Scene {
     this.addSummaryTable(cx, this.field.height / 2 - 125);
 
     if (victoria && !esCampania) {
-      this.makeButton(this.field.width / 2, this.field.height / 2 + 150, 'Siguiente oleada', 0x46c08a, () => {
+      this.makeButton(this.field.width / 2, this.field.height / 2 + 150, t('battle.nextWave'), 0x46c08a, () => {
         this.estado.avanzarTrasVictoria();
         this.scene.start('Deploy');
       });
     } else if (!victoria) {
-      this.makeButton(this.field.width / 2 - 120 * this.view.ui, this.field.height / 2 + 150, 'Reintentar oleada', 0x4f7bd6, () => {
+      this.makeButton(this.field.width / 2 - 120 * this.view.ui, this.field.height / 2 + 150, t('battle.retryWave'), 0x4f7bd6, () => {
         this.scene.start('Deploy');
       });
-      this.makeButton(this.field.width / 2 + 120 * this.view.ui, this.field.height / 2 + 150, 'Reiniciar campaña', 0x8a93a0, () => {
+      this.makeButton(this.field.width / 2 + 120 * this.view.ui, this.field.height / 2 + 150, t('battle.restartCampaign'), 0x8a93a0, () => {
         this.estado.reiniciar();
         this.scene.start('Deploy');
       });
     } else {
-      this.makeButton(this.field.width / 2, this.field.height / 2 + 150, 'Jugar de nuevo', 0x46c08a, () => {
+      this.makeButton(this.field.width / 2, this.field.height / 2 + 150, t('battle.playAgain'), 0x46c08a, () => {
         this.estado.reiniciar();
         this.scene.start('Deploy');
       });
@@ -479,10 +497,10 @@ export class BattleScene extends Phaser.Scene {
     }
     const fila = (a: string, b: string, c: string, d: string, e: string): string =>
       a.padEnd(20) + b.padStart(6) + c.padStart(7) + d.padStart(8) + e.padStart(9);
-    const lineas = [fila('Tu ejército', 'Desp.', 'Bajas', 'Daño', 'Muertes')];
+    const lineas = [fila(t('table.army'), t('table.deployed'), t('table.losses'), t('table.damage'), t('table.kills'))];
     for (const t of tipos) {
       const s = propias[t]!;
-      const nombre = (UNITS[t].nombreCorto ?? UNITS[t].nombre) + (t === mvp ? ' ★' : '');
+      const nombre = unitShortName(t) + (t === mvp ? ' ★' : '');
       lineas.push(fila(nombre, String(s.desplegadas), String(s.bajas), String(Math.round(s.dano)), String(s.muertes)));
     }
     let rDesp = 0;
@@ -494,7 +512,7 @@ export class BattleScene extends Phaser.Scene {
       rDano += s!.dano;
     }
     lineas.push('');
-    lineas.push(fila('Rival (total)', String(rDesp), String(rBajas), String(Math.round(rDano)), ''));
+    lineas.push(fila(t('table.rival'), String(rDesp), String(rBajas), String(Math.round(rDano)), ''));
     this.text(cx, y, lineas.join('\n'), {
       fontFamily: 'monospace',
       fontSize: this.px(15),

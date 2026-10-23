@@ -11,7 +11,6 @@ export type TerrainKind = 'roca' | 'bosque' | 'barro';
 
 export interface TerrainStats {
   id: TerrainKind;
-  nombre: string;
   /** No se puede atravesar; las unidades la rodean. */
   impassable: boolean;
   /** Bloquea la línea de visión (las flechas no pasan). */

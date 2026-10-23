@@ -7,9 +7,6 @@ export type Team = 'jugador' | 'rival';
 /** Estadísticas de una unidad, cargadas desde units.json. */
 export interface UnitStats {
   id: UnitType;
-  nombre: string;
-  /** Nombre abreviado para botones estrechos; si falta se usa `nombre`. */
-  nombreCorto?: string;
   rol: string;
   hp: number;
   damage: number;

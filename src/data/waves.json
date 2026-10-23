@@ -3,7 +3,6 @@
   "oleadas": [
     {
       "id": 1,
-      "nombre": "Escaramuza",
       "presupuestoJugador": 60,
       "campo": {
         "ancho": 1000,
@@ -22,7 +21,6 @@
     },
     {
       "id": 2,
-      "nombre": "Avance",
       "presupuestoJugador": 82,
       "campo": {
         "ancho": 1150,
@@ -42,7 +40,6 @@
     },
     {
       "id": 3,
-      "nombre": "Ofensiva",
       "presupuestoJugador": 115,
       "campo": {
         "ancho": 1300,
@@ -62,7 +59,6 @@
     },
     {
       "id": 4,
-      "nombre": "Asalto",
       "presupuestoJugador": 150,
       "campo": {
         "ancho": 1450,
@@ -82,7 +78,6 @@
     },
     {
       "id": 5,
-      "nombre": "Cerco",
       "presupuestoJugador": 190,
       "campo": {
         "ancho": 1600,
@@ -103,7 +98,6 @@
     },
     {
       "id": 6,
-      "nombre": "Asalto final",
       "presupuestoJugador": 240,
       "campo": {
         "ancho": 1760,

@@ -17,7 +17,6 @@ export function unlockedTypes(waveId: number): UnitType[] {
 
 export interface WaveDef {
   id: number;
-  nombre: string;
   presupuestoJugador: number;
   /** Tamaño del tablero: `alto` es la zona de juego (sin franjas de HUD). */
   campo: { ancho: number; alto: number; columnas: number; filas: number };

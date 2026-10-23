@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { RandomRulesAI } from './ai/RandomRulesAI';
+import { initI18n } from './i18n';
 import { GameState } from './game/GameState';
 import { WAVES, fieldFor } from './sim/data';
 import { BootScene } from './scenes/BootScene';
@@ -8,6 +9,8 @@ import { BattleScene } from './scenes/BattleScene';
 
 // Altura extra para la franja de HUD/paleta bajo el campo.
 export const HUD_HEIGHT = 0; // el HUD se dibuja dentro del campo en v0.1.
+
+initI18n();
 
 const inicial = fieldFor(WAVES.oleadas[0]);
 

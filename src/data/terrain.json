@@ -1,7 +1,6 @@
 {
   "roca": {
     "id": "roca",
-    "nombre": "Roca",
     "impassable": true,
     "blocksLoS": true,
     "speedMult": 1.0,
@@ -13,7 +12,6 @@
   },
   "bosque": {
     "id": "bosque",
-    "nombre": "Bosque",
     "impassable": false,
     "blocksLoS": false,
     "speedMult": 0.5,
@@ -25,7 +23,6 @@
   },
   "barro": {
     "id": "barro",
-    "nombre": "Barro",
     "impassable": false,
     "blocksLoS": false,
     "speedMult": 0.55,

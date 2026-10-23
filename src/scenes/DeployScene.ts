@@ -8,11 +8,13 @@ import {
 } from '../deploy/grid';
 import type { GameState } from '../game/GameState';
 import { HUD_BAND, UNITS, unlockedTypes, WAVES } from '../sim/data';
+import { t, toggleLang, unitShortName, waveName } from '../i18n';
 import { defensiveAnchor, type Stance } from '../sim/stance';
 import { Rng } from '../sim/rng';
 import { generateTerrain, type TerrainFeature } from '../sim/terrain';
 import type { Battlefield, PlacedUnit, UnitType } from '../sim/types';
 import { drawTerrain, drawUnitShape } from './draw';
+import { addLanguageButton } from './langButton';
 import { fitToScreen, onScreenResize, requestFullscreenOnTouch, sharpenTexts, type View } from './layout';
 
 interface PaletteButton {
@@ -51,6 +53,7 @@ export class DeployScene extends Phaser.Scene {
   private budgetText!: Phaser.GameObjects.Text;
   private paletteLabels: Phaser.GameObjects.Text[] = [];
   private startLabel!: Phaser.GameObjects.Text;
+  private langBtn!: Phaser.GameObjects.Text;
 
   constructor() {
     super('Deploy');
@@ -149,10 +152,9 @@ export class DeployScene extends Phaser.Scene {
   }
 
   private buildStanceTexts(): void {
-    const labels: Record<Stance, string> = { ataque: 'ATAQUE', defensa: 'DEFENSA' };
     for (const b of this.stanceBtns) {
       this.stanceLabels.push(
-        this.text(b.x + b.w / 2, b.y + b.h / 2, labels[b.stance], {
+        this.text(b.x + b.w / 2, b.y + b.h / 2, t(`stance.${b.stance}`), {
           fontSize: this.px(15),
           color: '#f2f6fa',
           fontStyle: 'bold',
@@ -161,7 +163,7 @@ export class DeployScene extends Phaser.Scene {
     }
     const first = this.stanceBtns[0];
     const last = this.stanceBtns[this.stanceBtns.length - 1];
-    this.text((first.x + last.x + last.w) / 2, first.y - 12, 'Postura', {
+    this.text((first.x + last.x + last.w) / 2, first.y - 12, t('stance.label'), {
       fontSize: this.px(12),
       color: '#9fb0c0',
     }).setOrigin(0.5, 0.5);
@@ -181,8 +183,8 @@ export class DeployScene extends Phaser.Scene {
     }).setOrigin(1, 0);
 
     const ayuda = v.touch
-      ? 'Toca una celda para colocar · toca una unidad para retirarla'
-      : 'Clic en una celda para colocar · clic en una unidad para retirarla';
+      ? t('deploy.helpTouch')
+      : t('deploy.helpClick');
     this.text(this.field.width / 2, 24 + Math.round(34 * v.ui), ayuda, {
       fontSize: this.px(14),
       color: '#9fb0c0',
@@ -198,7 +200,9 @@ export class DeployScene extends Phaser.Scene {
       this.paletteLabels.push(label);
     }
 
-    this.startLabel = this.text(this.startBtn.x + this.startBtn.w / 2, this.startBtn.y + this.startBtn.h / 2, 'COMENZAR', {
+    this.langBtn = addLanguageButton(this.text.bind(this), v, (n) => this.px(n));
+
+    this.startLabel = this.text(this.startBtn.x + this.startBtn.w / 2, this.startBtn.y + this.startBtn.h / 2, t('deploy.start'), {
       fontSize: this.px(18),
       color: '#0d1b12',
       fontStyle: 'bold',
@@ -308,18 +312,18 @@ export class DeployScene extends Phaser.Scene {
 
   private updateTexts(): void {
     const w = this.estado.wave;
-    this.hudText.setText(`Oleada ${w.id}/${WAVES_COUNT} · ${w.nombre}`);
+    this.hudText.setText(t('deploy.wave', { id: w.id, total: WAVES_COUNT, name: waveName(w.id) }));
 
     const gastado = this.gastado();
     const total = this.estado.presupuesto;
-    this.budgetText.setText(`Presupuesto: ${gastado} / ${total}`);
+    this.budgetText.setText(t('deploy.budget', { spent: gastado, total }));
     this.budgetText.setColor(gastado > total ? '#ff8a8a' : '#ffe08a');
 
     for (const label of this.paletteLabels) {
       const type = label.getData('type') as UnitType;
       const u = UNITS[type];
       const count = this.countPlaced(type);
-      label.setText(`${u.nombreCorto ?? u.nombre}\n${u.cost} pts   ×${count}`);
+      label.setText(t('deploy.palette', { name: unitShortName(type), cost: u.cost, count }));
       label.setColor(type === this.selected ? '#ffffff' : '#c4d0dc');
       // Reposicionar el texto a la derecha del icono.
       const btn = this.palette.find((b) => b.type === type)!;
@@ -345,6 +349,13 @@ export class DeployScene extends Phaser.Scene {
     // Coordenadas de mundo: la cámara está desplazada y con zoom.
     const x = pointer.worldX;
     const y = pointer.worldY;
+
+    // ¿Botón de idioma?
+    if (this.langBtn.getBounds().contains(x, y)) {
+      toggleLang();
+      this.layout();
+      return;
+    }
 
     // ¿Botón comenzar?
     if (this.inRect(x, y, this.startBtn) && this.placed.size > 0) {

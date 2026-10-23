@@ -7,6 +7,7 @@
 import { PredefinedWaveAI } from '../ai/PredefinedWaveAI';
 import { RandomRulesAI } from '../ai/RandomRulesAI';
 import { cells } from '../deploy/grid';
+import { waveName } from '../i18n';
 import { fieldFor, UNITS, UNIT_TYPES, unlockedTypes, WAVES } from './data';
 import { Rng } from './rng';
 import { Simulation } from './Simulation';
@@ -143,7 +144,7 @@ for (let i = 0; i < WAVES.oleadas.length; i++) {
   const bc = best.counts;
   const bestStr = UNIT_TYPES.map((t) => `${bc[t]}${t.slice(0, 3)}`).join(' ');
   console.log(
-    `Oleada ${wave.id} (${wave.nombre}): mejor win ${pct(best.wr)} con [${bestStr}]  |  rival: ${comp}`,
+    `Oleada ${wave.id} (${waveName(wave.id)}): mejor win ${pct(best.wr)} con [${bestStr}]  |  rival: ${comp}`,
   );
 
   // Ejército de referencia (presupuesto repartido a partes iguales entre los
